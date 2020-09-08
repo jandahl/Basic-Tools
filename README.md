@@ -15,5 +15,5 @@
  `up-yours` is a simple script that assumes that the last command line argument is a target host/ip that is down.  
  It continually pings the host until it gets a reply, after which it runs the entire command after its invocation, e.g. `up ssh -l root 10.20.30.40`. 
 
-### flaplogger
+### `flaplogger`
  Takes a host/ip that it then logs to screen when it tries to ping and whether it succeeded or not. Not updated since 2016 and not tested either. YMMV.
