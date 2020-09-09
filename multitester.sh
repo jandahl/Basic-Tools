@@ -35,7 +35,7 @@ function icmpBlast() {
     ## Ping section
     printf "\n\t%s pings: " "${numPings}"
     for icmpechoes in $(seq 1 "${numPings}"); do
-        ping -t 1 -c 1 "${testItem}" 1> /dev/null 2>&1 && printf "${allOK}" || printf "${oShit}"
+        ping -t 1 -c 1 "${testItem}" 1> /dev/null 2>&1 && printf "%s" "${allOK}" || printf "%s" "${oShit}"
     done
 }
 
@@ -71,7 +71,7 @@ function reverseAndForwardLookup() {
     # echo $testItem
     if [[ ${testItem} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
         # echo "Input looks like an IPv4! Let's try for Reverse DNS! "
-        reverseLookup=$(host -4 -t PTR "${testItem}" | head -1 | awk '{print $NF}')
+        reverseLookup=$(echo $(host -4 -t PTR "${testItem}" "${nameServer}" | grep ${testItem} | awk '{print $NF}'))
         if [ "${reverseLookup}" == "3(NXDOMAIN)" ]; then
             digOutput="No PTR/Reverse DNS! ${clownWorld}"
         else
@@ -80,7 +80,7 @@ function reverseAndForwardLookup() {
 
     else
         # echo "Input does not look like an IPv4! Let's try for an A record!"
-        digOutput=$(host -4 -t A "${testItem}" | head -1 | awk '{print $NF}')
+        digOutput=$(echo $(host -4 -t A "${testItem}" "${nameServer}" | grep ${testItem} | awk '{print $NF}'))
     fi
 
 }
@@ -181,6 +181,11 @@ scriptName="multitester"
 scriptVersion="2020-09-08 JGM"
 sleepTimer="0"
 isotime="$(date +"%Y-%m-%dT%H:%M:%SZ")"
+
+# Well, sometimes the system differentiates between the "real"
+# DNS server from DHCP, and the one used in a VPN tunnel.
+# Therefore I am forced to make a var for this stupid shit.
+nameServer="10.2.1.10"
 
 colorInit
 
