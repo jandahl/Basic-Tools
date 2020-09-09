@@ -68,10 +68,17 @@ function actualNetcatting() {
 }
 
 function reverseAndForwardLookup() {
-    # echo $testItem
+    # Well, sometimes the system differentiates between the "real"
+    # DNS server from DHCP, and the one used in a VPN tunnel.
+    # Therefore I am forced to make a var for this stupid shit.
+    # So, here's the deal: If there's a $nameServer in your env,
+    # it will be used for the queries. If not, then it'll use whatever
+    # default the system has.
+    # Set the nameServer by adding this to your .bashrc or other init:
+    # export nameServer="10.2.1.10"
     if [[ ${testItem} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-        # echo "Input looks like an IPv4! Let's try for Reverse DNS! "
-        reverseLookup=$(echo $(host -4 -t PTR "${testItem}" "${nameServer}" | grep ${testItem} | awk '{print $NF}'))
+        # "Input looks like an IPv4! Let's try for Reverse DNS!
+        reverseLookup=$(echo $(host -4 -t PTR "${testItem}" ${nameServer} | grep ${testItem} | awk '{print $NF}'))
         if [ "${reverseLookup}" == "3(NXDOMAIN)" ]; then
             digOutput="No PTR/Reverse DNS! ${clownWorld}"
         else
@@ -79,8 +86,8 @@ function reverseAndForwardLookup() {
         fi
 
     else
-        # echo "Input does not look like an IPv4! Let's try for an A record!"
-        digOutput=$(echo $(host -4 -t A "${testItem}" "${nameServer}" | grep ${testItem} | awk '{print $NF}'))
+        # Input does not look like an IPv4! Let's try for an A record!
+        digOutput=$(echo $(host -4 -t A "${testItem}" ${nameServer} | grep ${testItem} | awk '{print $NF}'))
     fi
 
 }
@@ -181,11 +188,6 @@ scriptName="multitester"
 scriptVersion="2020-09-08 JGM"
 sleepTimer="0"
 isotime="$(date +"%Y-%m-%dT%H:%M:%SZ")"
-
-# Well, sometimes the system differentiates between the "real"
-# DNS server from DHCP, and the one used in a VPN tunnel.
-# Therefore I am forced to make a var for this stupid shit.
-nameServer="10.2.1.10"
 
 colorInit
 
