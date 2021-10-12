@@ -35,7 +35,7 @@ function icmpBlast() {
     ## Ping section
     printf "\n\t%s pings: " "${numPings}"
     for icmpechoes in $(seq 1 "${numPings}"); do
-        ping -t 1 -c 1 "${testItem}" 1> /dev/null 2>&1 && printf "%s" "${allOK}" || printf "%s" "${oShit}"
+        ping -c 1 "${testItem}" 1> /dev/null 2>&1 && printf "%s" "${allOK}" || printf "%s" "${oShit}"
     done
 }
 
@@ -105,9 +105,9 @@ shitInit() {
 
     netcatFlags="-w 1 -z"
 
-    allOK="👌"
-    oShit="💩"
-    clownWorld="🤡"
+    allOK="👌 "
+    oShit="💩 "
+    clownWorld="🤡 "
 
     if [ -n "$STY" ] || [ -n "$TMUX" ]; then
         trap 'echo -n -e "\033k${defaultTitle}\033\\"' 0 1 2 15
