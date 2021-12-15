@@ -15,7 +15,7 @@ function colorInit() {
 function initialize {
   outputdir="/home/jgm/log4j"
   mkdir -p ${outputdir}
-  serverList="lbrb01 lbrb02 lbrb03 lbrb04 lbrb05 lbrb06 lbrb07 lbrb09 lbrb10 lbrb11 lbrb12 lbrb13 lbrb14 lbrb15 lbrb16"
+  serverList="lbrb01 lbrb02 lbrb03 lbrb05 lbrb06 lbrb07 lbrb09 lbrb10 lbrb11 lbrb12 lbrb13 lbrb14 lbrb15 lbrb16"
   # commandSet="locate -i log4j; exit"
   commandSet="locate -i -r '/log4j.*\.jar'; exit"
 }; initialize
@@ -23,7 +23,9 @@ function initialize {
 
 function main {
   for server in ${serverList}; do
-    echo "Trying ${server}; assuming ${Emphasize}updatedb${ColorOff} has been run"
-    ssh ${server} "${commandSet}" > ${outputdir}/$(date +%Y-%m-%d)-${server}.txt
-  done
+  # outputFilename="${outputdir}/$(date +%Y-%m-%d)-${server}.txt"
+  outputFilename="${outputdir}/${server}"
+  echo "Trying ${server}; assuming ${Emphasize}updatedb${ColorOff} has been run"
+  ssh ${server} "${commandSet}" > ${outputFilename}
+done
 }; main
