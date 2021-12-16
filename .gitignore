@@ -1,2 +1,5 @@
 
 staging/loopThroughServers.sh
+staging/1-loopThroughServers.sh
+staging/2-fetchFilesViaSCP.sh
+staging/3-pushTarFilesToUsefulServer.sh
