@@ -28,8 +28,8 @@ echo
 
 function main() {
 	shitInit
-	[ -d ~/Pinglog ] || mkdir ~/Pinglog
-	file=~/Pinglog/$(date +%Y-%m-%d-kl-%H-%M).pinglog.${testItem}.txt
+	[ -d $outputDirectory ] || mkdir ${outputDirectory}
+	file=${outputDirectory}/$(date +%Y-%m-%d-kl-%H-%M).pinglog.${testItem}.txt
 	touch ${file}
 
 	echo -e "Pinging ${testItem} every "${sleepTimer}" seconds - started $(date +%Y-%m-%d\ at\ %H\:%M)\n\nTime stamped results saved in "${file}" "${ColorOff}" "
@@ -64,6 +64,7 @@ scriptFile=$(basename "${0}")
 scriptName="pingu"
 scriptVersion="2021-10-12 JGM"
 sleepTimer="5"
+outputDirectory="~/Pinglog"
 isotime="$(date +"%Y-%m-%dT%H:%M:%SZ")"
 
 colorInit
