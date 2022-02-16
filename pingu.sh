@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 
+scriptFile=$(basename "${0}")
+scriptName="pingu"
+scriptVersion="2022-02-16 JGM"
+sleepTimer="5"
+outputDirectory="$HOME/Pinglog"
+isotime="$(date +"%Y-%m-%dT%H:%M:%SZ")"
+
 function aboutMe() {
     printf "\n\t%s, ver %s" "${scriptName}" "${scriptVersion}"
-    printf "\nPing a given host with a certain frequency - 5 seconds default - and save in a time stamped file"
+    printf "\nPing a given host with a certain frequency - %s seconds default - and save in a time stamped file" "${sleepTimer}"
     printf "\nUsage:\n\n\t%s%s ADDRESS %s" "${scriptFile}" "${Emphasize}" "${ColorOff}"
     printf "\n\n\tExample:"
     printf "\n\t\t%s%s www.example.org 10%s" "${scriptFile}" "${Emphasize}" "${ColorOff}"
@@ -25,47 +32,44 @@ function colorInit() {
 }
 echo
 
+function meatAndPotatoes() {
+        if $(eval ping -c 1 "${testItem}" 1> /dev/null 2>&1); then
+            printf "${allOK}"
+            savestring="$(date +%Y-%m-%d\ %H:%M:%S) - ${testItem} - ${pingoutput} ms"
+        else
+            printf "${oShit}"
+            savestring="$(date +%Y-%m-%d\ %H:%M:%S) - ${testItem} - No reply"
+        fi
+        echo ${savestring} >> ${file}
+}
 
 function main() {
 	shitInit
-	[ -d $outputDirectory ] || mkdir ${outputDirectory}
+	[ -d "$outputDirectory" ] || mkdir "$outputDirectory"
 	file=${outputDirectory}/$(date +%Y-%m-%d-kl-%H-%M).pinglog.${testItem}.txt
-	touch ${file}
+	touch "${file}"
 
-	echo -e "Pinging ${testItem} every "${sleepTimer}" seconds - started $(date +%Y-%m-%d\ at\ %H\:%M)\n\nTime stamped results saved in "${file}" "${ColorOff}" "
+	echo -e "Pinging ${testItem} every ${sleepTimer} seconds - started ${isotime} \n"
+    echo -e "Time stamped results saved in ${file} ${ColorOff}"
 	
     while sleep "${sleepTimer}"
 	do
-	        if $(ping -c 1 "${testItem}" 1> /dev/null 2>&1); then
-	        	printf "${allOK}"
-	        	savestring="$(date +%Y-%m-%d\ %H:%M:%S) - ${testItem} - ${pingoutput} ms"
-	        else
-	        	printf "${oShit}"
-	        	savestring="$(date +%Y-%m-%d\ %H:%M:%S) - ${testItem} - No reply"
-	        fi
-	        echo ${savestring} >> ${file}
+        meatAndPotatoes
 	done
 }
 
 shitInit() {
 	# Just comment out the versions you don't want
 	# Note that not all VTYs handle double wide emojis equally well so I've added a space to accomodate. YMMV.
-    # allOK="."
-    # oShit="!"
+    allOK="."
+    oShit="!"
     # allOK="✅ "
     # oShit="⛔️ "
-    allOK="👌 "
-    oShit="💩 "
+    # allOK="👌 "
+    # oShit="💩 "
     # clownWorld="🤡"
 }
 
-defaultTitle=${HOSTNAME}
-scriptFile=$(basename "${0}")
-scriptName="pingu"
-scriptVersion="2021-10-12 JGM"
-sleepTimer="5"
-outputDirectory="~/Pinglog"
-isotime="$(date +"%Y-%m-%dT%H:%M:%SZ")"
 
 colorInit
 
@@ -73,7 +77,7 @@ colorInit
 while getopts ":t:" opt; do
     case $opt in
         t)
-            echo -e "\n-r was triggered, so I shall retry every $OPTARG seconds" >&2
+            echo -e "\n-t was triggered, so I shall retry every $OPTARG seconds" >&2
             export sleepTimer="${OPTARG}"
             ;;
         \?)
