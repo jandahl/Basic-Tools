@@ -33,12 +33,14 @@ function colorInit() {
 echo
 
 function meatAndPotatoes() {
-        if $(eval ping -c 1 "${testItem}" 1> /dev/null 2>&1); then
-            printf "${allOK}"
-            savestring="$(date +%Y-%m-%d\ %H:%M:%S) - ${testItem} - ${pingoutput} ms"
-        else
+    icmpTest=$(ping -c 1 ${testItem} | head -2 | tail -1 | grep -oP '(?<=time\=).*?(?=ms)')
+
+        if [[ icmpTest = "" ]]; then
             printf "${oShit}"
             savestring="$(date +%Y-%m-%d\ %H:%M:%S) - ${testItem} - No reply"
+        else
+            printf "${allOK}"
+            savestring="$(date +%Y-%m-%d\ %H:%M:%S) - ${testItem} - ${icmpTest} ms"
         fi
         echo ${savestring} >> ${file}
 }
@@ -50,6 +52,7 @@ function main() {
 	touch "${file}"
 
 	echo -e "Pinging ${testItem} every ${sleepTimer} seconds - started ${isotime} \n"
+    echo -e "(due to laziness the first ping will be in ${sleepTimer} seconds)"
     echo -e "Time stamped results saved in ${file} ${ColorOff}"
 	
     while sleep "${sleepTimer}"
