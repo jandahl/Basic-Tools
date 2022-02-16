@@ -30,18 +30,20 @@ function main() {
 	shitInit
 	[ -d ~/Pinglog ] || mkdir ~/Pinglog
 	file=~/Pinglog/$(date +%Y-%m-%d-kl-%H-%M).pinglog.${testItem}.txt
-	touch $file
+	touch ${file}
+
 	echo -e "Pinging ${testItem} every "${sleepTimer}" seconds - started $(date +%Y-%m-%d\ at\ %H\:%M)\n\nTime stamped results saved in "${file}" "${ColorOff}" "
-	while sleep "${sleepTimer}"
+	
+    while sleep "${sleepTimer}"
 	do
 	        if $(ping -c 1 "${testItem}" 1> /dev/null 2>&1); then
 	        	printf "${allOK}"
-	        	savestring="$(date +%Y-%m-%d\ %H:%M:%S) - ${testItem} - $pingoutput ms"
+	        	savestring="$(date +%Y-%m-%d\ %H:%M:%S) - ${testItem} - ${pingoutput} ms"
 	        else
 	        	printf "${oShit}"
 	        	savestring="$(date +%Y-%m-%d\ %H:%M:%S) - ${testItem} - No reply"
 	        fi
-	        echo $savestring >> $file
+	        echo ${savestring} >> ${file}
 	done
 }
 
