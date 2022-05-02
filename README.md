@@ -1,5 +1,8 @@
+### Note for Windows users
+It might, it might'nt work. There's a little leeway for Cygwin somewhere in the code but don't expect it to work out of the box. Pull Requests are welcome!
+
 ## Basic Tools
- Basic Tools that should make your life easier
+ Basic Tools that should make your life easier. 
 
  Usually there's a help/usage screen if you run them without parameters.
 
