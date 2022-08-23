@@ -10,6 +10,7 @@ function aboutMe() {
     printf "\n\n\tExample:"
     printf "\n\t\t%s %s example.com%s" "${scriptFile}" "${Emphasize}" "${ColorOff}"
     printf "\n\t\t%s %s example.com example.org%s" "${scriptFile}" "${Emphasize}" "${ColorOff}"
+    printf "\n\n\n"
 }
 
 function colorInit() {
