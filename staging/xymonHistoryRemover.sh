@@ -29,16 +29,16 @@ function colorInit() {
 
 function goDeleteHistory() {
 	for removableItem in ${itemsToRemoveFromXymon}; do
-		echo "Her slettes ikke endnu dette er bare et testscript indtil videre"
+		printf "\nHer slettes ikke endnu dette er bare et testscript indtil videre"
 		# /home/xymon/server/bin/xymon 127.0.0.1 "drop ${removableItem}"
-        printf "--------"
-		printf "Asked xymon to delete history for %s - remember that if 'hosts.cfg' still points\nto the device, it'll just pop up again." "${removableItem}"
+        printf "\n++++++++"
+		printf "'nAsked xymon to delete history for %s - remember that if 'hosts.cfg' still points\nto the device, it'll just pop up again." "${removableItem}"
 		grep "${removableItem}" ${xymonConfigFile}
 	done
 }
 
 function askIfUserIsSure() {
-	printf "You have stated that you want to remove the following item(s);\n\t%s" "${itemsToRemoveFromXymon}"
+	printf "\nYou have stated that you want to remove the following item(s);\n\t%s" "${itemsToRemoveFromXymon}\n\n"
 	read -p "Do you want to proceed? [y/N] " yn
 
 	case $yn in 
