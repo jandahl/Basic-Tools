@@ -35,7 +35,7 @@ function icmpBlast() {
     ## Ping section
     printf "\n\t%s pings: " "${numPings}"
     for icmpechoes in $(seq 1 "${numPings}"); do
-        ping -c 1 "${testItem}" 1> /dev/null 2>&1 && printf "%s" "${allOK}" || printf "%s" "${oShit}"
+        ping -W -c 1 "${testItem}" 1> /dev/null 2>&1 && printf "%s" "${allOK}" || printf "%s" "${oShit}"
     done
 }
 
