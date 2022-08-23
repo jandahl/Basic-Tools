@@ -28,23 +28,22 @@ function colorInit() {
 }
 
 function goDeleteHistory() {
-    for removableItem in ${itemsToRemoveFromXymon}; do
-        printf "\nHer slettes ikke endnu dette er bare et testscript indtil videre"
-        /home/xymon/server/bin/xymon 127.0.0.1 "drop ${removableItem}"
+	for removableItem in ${itemsToRemoveFromXymon}; do
         printf "\n++++++++"
-        printf "\nAsked xymon to delete history for %s - remember that if 'hosts.cfg' still points\nto the device, it'll just pop up again.\n\n" "${removableItem}"
-        grep "${removableItem}" ${xymonConfigFile}
-    done
+        /home/xymon/server/bin/xymon 127.0.0.1 "drop ${removableItem}"
+		printf "\nAsked xymon to delete history for %s - remember that if 'hosts.cfg' still points\nto the device, it'll just pop up again.\n\n" "${removableItem}"
+		grep "${removableItem}" ${xymonConfigFile}
+	done
 }
 
 function askIfUserIsSure() {
-    printf "\nYou have stated that you want to remove the following item(s);\n\t%s\n\n" "${itemsToRemoveFromXymon}"
-    read -p "Do you want to proceed? [y/N] " yn
+	printf "\nYou have stated that you want to remove the following item(s);\n\t%s\n\n" "${itemsToRemoveFromXymon}"
+	read -p "Do you want to proceed? [y/N] " yn
 
-    case $yn in 
-        [Yy]*) echo "OK, we will proceed"; return 0;;
-        [Nn]*) echo "Aborted"; exit 1;;
-        *    ) echo "Invalid response, aborting"; exit 1;;
+	case $yn in 
+    	[Yy]*) echo "OK, we will proceed"; return 0;;
+    	[Nn]*) echo "Aborted"; exit 1;;
+    	*    ) echo "Invalid response, aborting"; exit 1;;
     esac
 }
 
