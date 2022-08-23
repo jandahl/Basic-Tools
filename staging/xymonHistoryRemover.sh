@@ -38,7 +38,7 @@ function goDeleteHistory() {
 }
 
 function askIfUserIsSure() {
-	printf "\nYou have stated that you want to remove the following item(s);\n\t%s" "${itemsToRemoveFromXymon}\n\n"
+	printf "\nYou have stated that you want to remove the following item(s);\n\t%s\n\n" "${itemsToRemoveFromXymon}"
 	read -p "Do you want to proceed? [y/N] " yn
 
 	case $yn in 
