@@ -32,7 +32,7 @@ function goDeleteHistory() {
 		printf "\nHer slettes ikke endnu dette er bare et testscript indtil videre"
 		# /home/xymon/server/bin/xymon 127.0.0.1 "drop ${removableItem}"
         printf "\n++++++++"
-		printf "'nAsked xymon to delete history for %s - remember that if 'hosts.cfg' still points\nto the device, it'll just pop up again." "${removableItem}"
+		printf "\nAsked xymon to delete history for %s - remember that if 'hosts.cfg' still points\nto the device, it'll just pop up again." "${removableItem}"
 		grep "${removableItem}" ${xymonConfigFile}
 	done
 }
@@ -43,7 +43,7 @@ function askIfUserIsSure() {
 
 	case $yn in 
     	[Yy]*) echo "OK, we will proceed"; return 0;;
-    	[Nn]*) echo "Aborted"; return 1;;
+    	[Nn]*) echo "Aborted"; exit 1;;
     	*    ) echo "Invalid response, aborting"; exit 1;;
     esac
 }
