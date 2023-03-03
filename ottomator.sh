@@ -27,8 +27,6 @@ function colorInit() {
 }
 
 function init() {
-
-    # configDirectory="/home/a-edbafjgm/FLYT-DATACENTERTRAFIK/FRA-DATA1/"
     configDirectory="${baseDirectory}/${ottomationSource}"
     configFileList="${configDirectory}/*"
     # fjern risiko for at fejle pga. tomme kataloger
