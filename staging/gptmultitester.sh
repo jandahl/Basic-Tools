@@ -1,8 +1,5 @@
 #!/bin/bash
 
-### ChatGPT 3.5 prompt:
-# I would like a bash script that has a multidimensional array with PORT NUMBER and PORT USAGE, e.g. "80","http";"443","https". The script should expect a target host or IPv4 address as a command line argument and give a help screen if it does not receive one. If it receives a valid command line argument, it should then proceed to: 1) Output the target on screen and do a DNS A lookup/reverse PTR lookup and print this in a parenthesis. 2) Try to reach the given target using cURL, given a separate multidimensional array. 3) For each member of its multidimensional array it should try to reach it via netcat. The script should accept several hostnames and/or IPs. Also, I should like to be able to serve this script command line arguments that add port numbers to either cURL (e.g. "-c 123,456" or "--curl 123,456") or netcat (e.g. "-p 789,123" or "--ports 789,123"), and an option for a retry timer in seconds (e.g. "-r 10" or "--retry 10"). 
-
 # Define the arrays
 declare -A CURL_PORTS=( ["80"]="http" ["443"]="https" )
 declare -A NC_PORTS=( ["22"]="ssh" ["80"]="http" ["443"]="https" )
