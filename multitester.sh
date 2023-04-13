@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+defaultTitle=${HOSTNAME}
+scriptFile=$(basename "${0}")
+scriptName="multitester"
+scriptVersion="2020-09-09 JGM"
+sleepTimer="0"
+isotime="$(date +"%Y-%m-%dT%H:%M:%SZ")"
+
 function aboutMe() {
     printf "\n\t%s, ver %s" "${scriptName}" "${scriptVersion}"
     printf "\n\tTries to acces the supplied IP or FQDN via several methods."
@@ -35,7 +42,7 @@ function icmpBlast() {
     ## Ping section
     printf "\n\t%s pings: " "${numPings}"
     for icmpechoes in $(seq 1 "${numPings}"); do
-        ping -W -c 1 "${testItem}" 1> /dev/null 2>&1 && printf "%s" "${allOK}" || printf "%s" "${oShit}"
+        ping -w 1 -c 1 "${testItem}" 1> /dev/null 2>&1 && printf "%s" "${allOK}" || printf "%s" "${oShit}"
     done
 }
 
@@ -181,13 +188,6 @@ function main() {
         letsGetReadyToRumble
     fi
 }
-
-defaultTitle=${HOSTNAME}
-scriptFile=$(basename "${0}")
-scriptName="multitester"
-scriptVersion="2020-09-09 JGM"
-sleepTimer="0"
-isotime="$(date +"%Y-%m-%dT%H:%M:%SZ")"
 
 colorInit
 
