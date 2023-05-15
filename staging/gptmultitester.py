@@ -5,79 +5,73 @@
 import argparse
 import socket
 import http.client
+import time
 
-# Define the multidimensional array with port numbers and port usage
-port_array = [["80", "http"], ["443", "https"], ["8080", "http-alt"]]
+# Multidimensional array of port numbers and usage
+PORTS = [("80", "http"), ("443", "https"), ("22", "ssh")]
 
-# Define variables for success and failure messages
-success_emoji = "✅"
-failure_emoji = "❌"
+# Failure and success messages with emojis
+SUCCESS_MESSAGE = "✅ Success!"
+FAILURE_MESSAGE = "❌ Failure!"
 
-# Define a function to connect to a host using raw sockets
-def connect_to_port(host, port):
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(5)
-        s.connect((host, int(port)))
-        s.shutdown(socket.SHUT_RDWR)
-        return True
-    except:
-        return False
+def main():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Test script to check port availability.')
+    parser.add_argument('targets', metavar='TARGET', type=str, nargs='+', help='Target host or IPv4 address')
+    parser.add_argument('-c', '--curl', metavar='PORTS', type=str, help='Port numbers to use for HTTP requests')
+    parser.add_argument('-p', '--ports', metavar='PORTS', type=str, help='Port numbers to use for raw socket connections')
+    parser.add_argument('-r', '--retry', metavar='SECONDS', type=int, default=0, help='Retry timer in seconds')
+    args = parser.parse_args()
 
-# Parse command-line arguments
-parser = argparse.ArgumentParser(description='Check ports on a target host.')
-parser.add_argument('host', type=str, help='the target host or IPv4 address')
-parser.add_argument('-c', '--curl', type=str, help='comma-separated list of cURL port numbers')
-parser.add_argument('-p', '--ports', type=str, help='comma-separated list of netcat port numbers')
-parser.add_argument('-r', '--retry', type=int, default=0, help='number of seconds to wait before retrying failed ports')
-args = parser.parse_args()
+    # Check if target argument was provided
+    if not args.targets:
+        parser.print_help()
+        exit()
 
-# Perform DNS A lookup/reverse PTR lookup and print the result
-try:
-    ip_address = socket.gethostbyname(args.host)
-    hostname = socket.gethostbyaddr(ip_address)[0]
-    print(args.host + " (" + ip_address + ")")
-except:
-    print("Error: unable to perform DNS lookup for " + args.host)
-    exit()
+    # Parse additional port arguments
+    curl_ports = [int(p) for p in args.curl.split(',')] if args.curl else []
+    raw_ports = [int(p) for p in args.ports.split(',')] if args.ports else []
 
-# Try to reach the target using conn.request
-try:
-    conn = http.client.HTTPConnection(args.host)
-    conn.request("HEAD", "/")
-    response = conn.getresponse()
-    if response.status >= 200 and response.status < 300:
-        print(success_emoji + " Target reached via HTTP on port 80")
-    else:
-        print(failure_emoji + " Unable to reach target via HTTP on port 80")
-except:
-    print(failure_emoji + " Unable to reach target via HTTP on port 80")
+    # Loop through targets
+    for target in args.targets:
+        try:
+            # DNS resolution and reverse PTR lookup
+            ip = socket.gethostbyname(target)
+            name = socket.gethostbyaddr(ip)[0]
+            print(f"{target} ({ip})")
 
-# Try to connect to each port using raw sockets
-for port in port_array:
-    if connect_to_port(args.host, port[0]):
-        print(success_emoji + " " + port[1] + " service detected on port " + port[0])
-    elif args.retry > 0:
-        print(failure_emoji + " " + port[1] + " service not detected on port " + port[0] + ", retrying in " + str(args.retry) + " seconds...")
-        time.sleep(args.retry)
-        if connect_to_port(args.host, port[0]):
-            print(success_emoji + " " + port[1] + " service detected on port " + port[0])
-        else:
-            print(failure_emoji + " " + port[1] + " service not detected on port " + port[0])
-    else:
-        print(failure_emoji + " " + port[1] + " service not detected on port " + port[0])
+            # HTTP requests using http.client
+            conn = http.client.HTTPConnection(target)
+            conn.request("GET", "/")
+            response = conn.getresponse()
+            print(f"HTTP response: {response.status} {response.reason}")
+            conn.close()
 
-# Handle additional command-line arguments for cURL and netcat ports
-if args.curl:
-    for curl_port in args.curl.split(","):
-        if connect_to_port(args.host, curl_port):
-            print(success_emoji + " cURL service detected on port " + curl_port)
-        else:
-            print(failure_emoji + " cURL service not detected on port " + curl_port)
+            # Raw socket connections
+            for port, usage in PORTS:
+                if port in raw_ports:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(2)
+                    result = s.connect_ex((target, int(port)))
+                    if result == 0:
+                        print(f"Port {port} ({usage}): {SUCCESS_MESSAGE}")
+                    else:
+                        print(f"Port {port} ({usage}): {FAILURE_MESSAGE}")
+                    s.close()
 
-if args.ports:
-    for netcat_port in args.ports.split(","):
-        if connect_to_port(args.host, netcat_port):
-            print(success_emoji + " netcat service detected on port " + netcat_port)
-        else:
-            print(failure_emoji + " netcat service not detected on port " + netcat_port)
+            # HTTP requests with custom ports
+            for port in curl_ports:
+                conn = http.client.HTTPConnection(target, port)
+                conn.request("GET", "/")
+                response = conn.getresponse()
+                print(f"HTTP response (port {port}): {response.status} {response.reason}")
+                conn.close()
+
+        except socket.gaierror:
+            print(f"{target}: {FAILURE_MESSAGE}")
+
+        if args.retry:
+            time.sleep(args.retry)
+
+if __name__ == '__main__':
+    main()
