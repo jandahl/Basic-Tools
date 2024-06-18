@@ -3,7 +3,7 @@
 defaultTitle=${HOSTNAME}
 scriptFile=$(basename "${0}")
 scriptName="multitester"
-scriptVersion="2020-09-09 JGM"
+scriptVersion="2024-06-18 JGM"
 sleepTimer="0"
 isotime="$(date +"%Y-%m-%dT%H:%M:%SZ")"
 
