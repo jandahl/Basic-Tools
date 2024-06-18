@@ -9,7 +9,7 @@ isotime="$(date +"%Y-%m-%dT%H:%M:%SZ")"
 
 function aboutMe() {
     printf "\n\t%s, ver %s" "${scriptName}" "${scriptVersion}"
-    printf "\n\tTries to acces the supplied IP or FQDN via several methods."
+    printf "\n\tTries to access the supplied IP or FQDN via several methods."
     printf "\n\tDoesn't care about IPv6."
     printf "\n\n\tExample:"
     printf "\n\t\t%s %s example.com%s" "${scriptFile}" "${Emphasize}" "${ColorOff}"
@@ -18,10 +18,10 @@ function aboutMe() {
     printf "\n\t\t%s %s-r SECONDS example.com%s" "${scriptFile}" "${Emphasize}" "${ColorOff}"
     printf "\n\n\tExample:"
     printf "\n\t\t%s %s-r 20 example.com example.org%s" "${scriptFile}" "${Emphasize}" "${ColorOff}"
-    printf "\n\n\tWant to add ONE custom port to the curl tests? Use -p!"
-    printf "\n\t\t%s %s-p PORT example.com%s" "${scriptFile}" "${Emphasize}" "${ColorOff}"
+    printf "\n\n\tWant to add custom ports to the curl tests? Use -p!"
+    printf "\n\t\t%s %s-p PORT1,PORT2,... example.com%s" "${scriptFile}" "${Emphasize}" "${ColorOff}"
     printf "\n\n\tExample:"
-    printf "\n\t\t%s %s-p 666 example.com example.org%s" "${scriptFile}" "${Emphasize}" "${ColorOff}"
+    printf "\n\t\t%s %s-p 666,8080 example.com example.org%s" "${scriptFile}" "${Emphasize}" "${ColorOff}"
 }
 
 function colorInit() {
@@ -103,10 +103,8 @@ shitInit() {
     numPings="4"
 
     curlPorts="22 80 443 3389"
-    if [ -z "$additionalPort" ]; then
-        true
-    else
-        curlPorts="${curlPorts} ${additionalPort}"
+    if [ -n "$additionalPorts" ]; then
+        curlPorts="${curlPorts} ${additionalPorts}"
     fi
     curlFlags="--insecure --connect-timeout 1"
 
@@ -199,8 +197,9 @@ while getopts ":r:p:" opt; do
             export sleepTimer="${OPTARG}"
             ;;
         p)
-            printf "\n-p was triggered, adding port %s to the mix!" "${OPTARG}"
-            export additionalPort="${OPTARG}"
+            printf "\n-p was triggered, adding ports %s to the mix!" "${OPTARG}"
+            IFS=',' read -r -a additionalPortsArray <<< "${OPTARG}"
+            additionalPorts="${additionalPortsArray[*]}"
             ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
