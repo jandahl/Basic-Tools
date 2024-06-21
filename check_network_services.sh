@@ -4,10 +4,13 @@
 GREEN="\033[32m"
 RED="\033[31m"
 RESET="\033[0m"
-
 # Constants for indicators
-GOOD_INDICATOR="${GREEN}✦${RESET}"
-BAD_INDICATOR="${RED}✧${RESET}"
+allOK="${GREEN}✦${RESET}"
+oShit="${RED}✧${RESET}"
+
+### Cooler alternatives to colored indicators
+# allOK="👌 "
+# oShit="💩 "
 
 # FQDN to lookup
 FQDN_LOOKUP="google.com"
@@ -45,9 +48,9 @@ get_interface_details() {
 
     # Ping the default gateway once
     if ping -t 1 -c 1 "$gateway" > /dev/null 2>&1; then
-        gateway_status=$GOOD_INDICATOR
+        gateway_status=$allOK
     else
-        gateway_status=$BAD_INDICATOR
+        gateway_status=$oShit
     fi
 
     echo -e "Interface: $interface, IP: $ip/$cidr, Gateway: $gateway $gateway_status"
@@ -60,9 +63,9 @@ check_dns_servers() {
     for nameserver in $nameservers; do
         echo -n "DNS: $nameserver "
         if nslookup "$FQDN_LOOKUP" "$nameserver" > /dev/null 2>&1; then
-            echo -e "$GOOD_INDICATOR"  # Green star for success
+            echo -e "$allOK"  # Green star for success
         else
-            echo -e "$BAD_INDICATOR"  # Red star for failure
+            echo -e "$oShit"  # Red star for failure
         fi
     done
 }

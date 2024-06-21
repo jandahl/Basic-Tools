@@ -178,7 +178,8 @@ function main() {
             for ((countDown = sleepTimer; countDown > 0; countDown--)); do
                 tput cup 10 $l
                 # echo -n "Waiting ${Emphasize}${i}${ColorOff} seconds and doing it all again!"
-                printf "\n\n\t\t\tWaiting %s%s%s seconds and doing it all again!" "${Emphasize}" "${countDown}" "${ColorOff}"
+                # printf "\n\n\t\t\tWaiting %s%s%s seconds and doing it all again!" "${Emphasize}" "${countDown}" "${ColorOff}"
+                echo "\n\n\t\t\tWaiting %s%s%s seconds and doing it all again!" "${Emphasize}" "${countDown}" "${ColorOff}"
                 sleep 1
             done
         done
