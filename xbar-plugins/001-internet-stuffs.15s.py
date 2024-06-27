@@ -33,6 +33,15 @@ STATUS_INDICATORS = {
     "mostly_good": {"icon": "🤷‍♂️ lookin' sketch'", "color": "Gold"}
 }
 
+# Test functions and their names
+TESTS = {
+    "ping_1": {"name": "Ping 1.1.1.1", "good_format": "Ping 1.1.1.1: Success", "bad_format": "Ping 1.1.1.1: Failure"},
+    "ping_gateway": {"name": "Ping Default Gateway", "good_format": "Ping Default Gateway ({gateway}): Success", "bad_format": "Ping Default Gateway ({gateway}): Failure"},
+    "dns_servers": {"name": "DNS Query", "good_format": "DNS Query ({server}): Success", "bad_format": "DNS Query ({server}): Failure"},
+    "http": {"name": "HTTP Request", "good_format": "HTTP Request ({url}): Success", "bad_format": "HTTP Request ({url}): Failure"},
+    "public_ip": {"name": "Public IP", "good_format": "Public IP: {ip} - Owner: {owner}", "bad_format": "Public IP: {ip} - Owner: {owner}"}
+}
+
 def get_default_gateway() -> str:
     """
     Get the default gateway of the primary network interface.
@@ -221,9 +230,7 @@ def check_network_conditions() -> dict:
     
     return {
         "ping_1": ping_1_success,
-        "ping_1_rtt": ping_1_rtt,
         "ping_gateway": ping_gateway_success,
-        "ping_gateway_rtt": ping_gateway_rtt,
         "dns_servers": dns_servers,
         "http": http_success,
         "public_ip": public_ip,
@@ -233,65 +240,69 @@ def check_network_conditions() -> dict:
 
 def determine_status(results: dict) -> str:
     """
-    Determine the overall network status based on the test results.
+    Determine the overall network status based on the results of the tests.
     
-    :param results: A dictionary with the results of the network tests.
-    :return: The status key ("all_good", "all_bad", "mostly_bad", "mostly_good").
+    :param results: The dictionary containing the results of the network tests.
+    :return: The status key indicating the overall network status.
     """
-    if not results["ping_1"]:
-        return "all_bad"
-    elif not results["ping_gateway"]:
+    if not all([
+        results["ping_1"],
+        results["ping_gateway"],
+        all(query_dns(server, DNS_QUERY_DOMAIN) for server in results["dns_servers"]),
+        results["http"]
+    ]):
         return "mostly_bad"
-    elif not all(query_dns(server, DNS_QUERY_DOMAIN) for server in results["dns_servers"]):
-        return "mostly_bad"
-    elif not results["http"]:
-        return "mostly_bad"
-    else:
-        return "all_good"
+    
+    return "all_good"
 
 def output_status(results: dict, status: str):
     """
-    Output the network status and detailed results.
+    Output the status of each network test and the overall status.
     
-    :param results: A dictionary with the results of the network tests.
-    :param status: The overall network status ("all_good", "all_bad", "mostly_bad", "mostly_good").
+    :param results: The dictionary containing the results of the network tests.
+    :param status: The key indicating the overall network status.
     """
-    icon = STATUS_INDICATORS[status]["icon"]
-    color = STATUS_INDICATORS[status]["color"]
-    
-    print(f"{icon}|color={color} dropdown=false")
+    overall_icon = STATUS_INDICATORS[status]["icon"]
+    overall_color = STATUS_INDICATORS[status]["color"]
+    print(f"{overall_icon}|color={overall_color} dropdown=false")
     print("---")
     
-    if results['ping_1']:
-        print(f"Ping {DEFAULT_PING_ADDRESS}: Success | color={STATUS_INDICATORS['all_good']['color']}")
-    else:
-        print(f"Ping {DEFAULT_PING_ADDRESS}: Failure | color={STATUS_INDICATORS['all_bad']['color']}")
-    
-    if results['ping_gateway']:
-        print(f"Ping Default Gateway ({results['gateway_ip']}): Success | color={STATUS_INDICATORS['all_good']['color']}")
-    else:
-        print(f"Ping Default Gateway ({results['gateway_ip']}): Failure | color={STATUS_INDICATORS['all_bad']['color']}")
-    
-    for server in results['dns_servers']:
-        if query_dns(server, DNS_QUERY_DOMAIN):
-            print(f"DNS Query ({server}): Success | color={STATUS_INDICATORS['all_good']['color']}")
-        else:
-            print(f"DNS Query ({server}): Failure | color={STATUS_INDICATORS['all_bad']['color']}")
-    
-    if results['http']:
-        print(f"HTTP Request ({HTTP_TEST_URL}): Success | color={STATUS_INDICATORS['all_good']['color']}")
-    else:
-        print(f"HTTP Request ({HTTP_TEST_URL}): Failure | color={STATUS_INDICATORS['all_bad']['color']}")
-    
-    print(f"Public IP: {results['public_ip']} - Owner: {results['ip_owner']} | color={STATUS_INDICATORS['all_good']['color']}")
+    for test, test_data in TESTS.items():
+        if test == "ping_1":
+            if results[test]:
+                print(f"{test_data['good_format']} | color={STATUS_INDICATORS['all_good']['color']}")
+            else:
+                print(f"{test_data['bad_format']} | color={STATUS_INDICATORS['all_bad']['color']}")
+        elif test == "ping_gateway":
+            if results[test]:
+                print(f"{test_data['good_format'].format(gateway=results['gateway_ip'])} | color={STATUS_INDICATORS['all_good']['color']}")
+            else:
+                print(f"{test_data['bad_format'].format(gateway=results['gateway_ip'])} | color={STATUS_INDICATORS['all_bad']['color']}")
+        elif test == "dns_servers":
+            for server in results[test]:
+                result = query_dns(server, DNS_QUERY_DOMAIN)
+                if result:
+                    print(f"{test_data['good_format'].format(server=server)} | color={STATUS_INDICATORS['all_good']['color']}")
+                else:
+                    print(f"{test_data['bad_format'].format(server=server)} | color={STATUS_INDICATORS['all_bad']['color']}")
+        elif test == "http":
+            if results[test]:
+                print(f"{test_data['good_format'].format(url=HTTP_TEST_URL)} | color={STATUS_INDICATORS['all_good']['color']}")
+            else:
+                print(f"{test_data['bad_format'].format(url=HTTP_TEST_URL)} | color={STATUS_INDICATORS['all_bad']['color']}")
+        elif test == "public_ip":
+            print(f"{test_data['good_format'].format(ip=results['public_ip'], owner=results['ip_owner'])} | color={STATUS_INDICATORS['all_good']['color']}")
 
 def main():
     """
-    Main function to execute the network checks and output the status.
+    Main function to execute network checks and output status.
     """
-    results = check_network_conditions()
-    status = determine_status(results)
-    output_status(results, status)
+    try:
+        network_results = check_network_conditions()
+        network_status = determine_status(network_results)
+        output_status(network_results, network_status)
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
 
 if __name__ == "__main__":
     main()
