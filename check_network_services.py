@@ -39,21 +39,35 @@ def set_status_indicators(fun_mode: bool) -> None:
 
 def get_active_network_interfaces() -> List[str]:
     """
-    Retrieve a list of active network interfaces.
+    Retrieve a list of active network interfaces. Cross-platform support for Linux, macOS, and Windows.
 
     Returns:
         List[str]: A list of active network interface names.
     """
     try:
         logger.debug("Getting list of network services")
-        services = subprocess.check_output(
-            ["networksetup", "-listnetworkserviceorder"], text=True
-        )
-        devices = [
-            line.split()[-1].strip(")")
-            for line in services.splitlines()
-            if "Device:" in line and line.split()[-1] != "Device: )"
-        ]
+        if os.name == "posix":
+            if os.uname().sysname == "Darwin":
+                services = subprocess.check_output(
+                    ["networksetup", "-listnetworkserviceorder"], text=True
+                )
+                devices = [
+                    line.split()[-1].strip(")")
+                    for line in services.splitlines()
+                    if "Device:" in line and line.split()[-1] != "Device: )"
+                ]
+            else:
+                devices = subprocess.check_output(
+                    ["ls", "/sys/class/net"], text=True
+                ).splitlines()
+        elif os.name == "nt":
+            devices = subprocess.check_output(
+                ["netsh", "interface", "show", "interface"], text=True
+            ).splitlines()
+            devices = [line.split()[-1] for line in devices if "Connected" in line]
+        else:
+            raise OSError("Unsupported operating system")
+
         logger.debug(f"Devices found: {devices}")
         active_interfaces = []
         for device in devices:
@@ -124,6 +138,52 @@ def get_interface_details(interface: str) -> Tuple[str, str, str]:
         logger.error(f"Error parsing interface details for {interface}: {e}")
         return (None, None, None)
 
+def get_dhcp_server(interface: str) -> str:
+    """
+    Retrieve the DHCP server address for a given interface. Cross-platform support for Linux, macOS, and Windows.
+
+    Args:
+        interface (str): The network interface name.
+
+    Returns:
+        str: The DHCP server address.
+    """
+    try:
+        logger.debug(f"Getting DHCP server for interface: {interface}")
+        if os.name == "posix":
+            if os.uname().sysname == "Darwin":
+                dhcp_server = subprocess.check_output(
+                    ["ipconfig", "getpacket", interface], text=True
+                ).splitlines()
+                for line in dhcp_server:
+                    if "server_identifier" in line:
+                        return line.split()[-1]
+            else:
+                dhcp_lease_file = f"/var/lib/dhcp/dhclient.{interface}.leases"
+                if os.path.exists(dhcp_lease_file):
+                    with open(dhcp_lease_file, 'r') as file:
+                        for line in file:
+                            if "dhcp-server-identifier" in line:
+                                return line.split()[-1].strip(";")
+                else:
+                    raise FileNotFoundError(f"DHCP lease file not found for interface {interface}")
+        elif os.name == "nt":
+            dhcp_server = subprocess.check_output(
+                ["netsh", "interface", "ip", "show", "config", "name=", interface], text=True
+            ).splitlines()
+            for line in dhcp_server:
+                if "DHCP Server" in line:
+                    return line.split(":")[-1].strip()
+        else:
+            raise OSError("Unsupported operating system")
+        return "No DHCP server found"
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error getting DHCP server for {interface}: {e}")
+        return "Error retrieving DHCP server"
+    except FileNotFoundError as e:
+        logger.error(f"Error finding DHCP lease file for {interface}: {e}")
+        return "DHCP lease file not found"
+
 def check_dns_servers(fqdn: str, terse: bool) -> List[dict]:
     """
     Check DNS servers for their resolution status of a given FQDN.
@@ -168,6 +228,7 @@ def main() -> None:
     parser.add_argument("--ip", action="store_true", help="Output current IP")
     parser.add_argument("--ip-subnet", action="store_true", help="Output current IP and subnet")
     parser.add_argument("--gateway", action="store_true", help="Output current gateway")
+    parser.add_argument("--dhcp", action="store_true", help="Output current DHCP server")
     parser.add_argument("--dns", action="store_true", help="Perform DNS tests")
     parser.add_argument("--fun-mode", action="store_true", help="Use fun mode with emojis")
     parser.add_argument("--fqdn", type=str, default="google.com", help="FQDN for DNS lookup")
@@ -188,8 +249,8 @@ def main() -> None:
     set_status_indicators(args.fun_mode)
 
     # If no specific flags are provided, output all information except IP (to avoid redundancy)
-    if not (args.interface or args.ip or args.ip_subnet or args.gateway or args.dns):
-        args.interface = args.ip_subnet = args.gateway = args.dns = True
+    if not (args.interface or args.ip or args.ip_subnet or args.gateway or args.dhcp or args.dns):
+        args.interface = args.ip_subnet = args.gateway = args.dhcp = args.dns = True
 
     active_interfaces = get_active_network_interfaces()
     results = {"interfaces": [], "dns": []}
@@ -198,7 +259,8 @@ def main() -> None:
         ip, cidr, gateway = get_interface_details(interface)
         if not ip or not cidr or not gateway:
             continue
-        interface_result = {"interface": interface, "ip": ip, "cidr": cidr, "gateway": gateway}
+        dhcp_server = get_dhcp_server(interface) if args.dhcp else None
+        interface_result = {"interface": interface, "ip": ip, "cidr": cidr, "gateway": gateway, "dhcp_server": dhcp_server}
         results["interfaces"].append(interface_result)
         if not args.json and not args.terse:
             if args.interface:
@@ -214,6 +276,8 @@ def main() -> None:
                 except OSError:
                     gateway_status = O_SHIT
                 print(f"Gateway: {gateway} {gateway_status}")
+            if args.dhcp:
+                print(f"DHCP Server: {dhcp_server}")
 
     if args.dns:
         dns_results = check_dns_servers(args.fqdn, args.terse)
@@ -243,6 +307,8 @@ def main() -> None:
                     except OSError:
                         gateway_status = O_SHIT
                     terse_output.append(f"gw: {iface['gateway']} {gateway_status}")
+                if args.dhcp:
+                    terse_output.append(f"dhcp: {iface['dhcp_server']}")
         for dns in results["dns"]:
             terse_output.append(f"dns: {dns['nameserver']} {dns['status']}")
         print("; ".join(terse_output))
