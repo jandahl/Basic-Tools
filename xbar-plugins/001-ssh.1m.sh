@@ -21,7 +21,7 @@
 typeset -A colors
 colors=(
     "red"    "Crimson"
-    "green"  "MediumSpringGreen"
+    "green"  "ForestGreen"
 )
 
 typeset -A icons
