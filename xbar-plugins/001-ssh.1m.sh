@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 #
 # SSH utility for quickly accessing configured hosts from ~/.ssh/config
 #
@@ -16,6 +16,9 @@
 #
 # For optimal performance, ensure ~/.ssh/config is correctly formatted with Host and HostName entries.
 #
+
+# Font for reuse
+font="size=18 font=UbuntuMono"
 
 # Define colors and icons
 typeset -A colors
@@ -103,7 +106,7 @@ for host in ${(k)hosts}; do
         fi
 
         # Format the line and add to output_lines array
-        output_lines+=("$ping_status $user_text | $actions")
+        output_lines+=("$ping_status $user_text | $font $actions")
     fi
 done
 
