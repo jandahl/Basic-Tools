@@ -10,16 +10,10 @@ For optimal performance, ensure ~/.ssh/config is correctly formatted with Host a
 """
 
 # <xbar.title>SSH</xbar.title>
-# <xbar.version>v1.3</xbar.version>
+# <xbar.version>v1.4</xbar.version>
 # <xbar.author>Jan Gronemann</xbar.author>
-# <xbar.author.github>jandahl</xbar.author.github>
+# <xbar.author.github>YourGitHubUsername</xbar.author.github>
 # <xbar.desc>Quickly SSH to your favorite hosts listed in your ~/.ssh/config file with status indicators.</xbar.desc>
-#
-# This script retrieves hostnames and IP addresses from ~/.ssh/config, checks SSH connectivity,
-# and displays them in xbar with color-coded indicators (green for success, red for failure).
-# It supports parallel processing for efficient connectivity checks and sorts the output alphabetically.
-#
-# Credits to the original concept by Thameera Senanayaka (github:thameera), enhanced and maintained by Jan Gronemann.
 
 import os
 import socket
@@ -28,31 +22,51 @@ import logging
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 import configparser
+import subprocess
 import unittest
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Constants for font, colors, and icons
-FONT = "size=18 font=UbuntuMono"
-COLORS = {
+# Default constants
+DEFAULT_SSH_CONFIG_PATH = os.path.expanduser("~/.ssh/config")
+DEFAULT_SETTINGS_PATH = os.path.expanduser("~/.config/xbar/ssh-config")
+DEFAULT_FONT = "size=18 font=SFMono"
+DEFAULT_COLORS = {
     "red": "Crimson",
     "green": "ForestGreen"
 }
-ICONS = {
+DEFAULT_ICONS = {
     "red": "✧",
-    "green": "✦"
+    "green": "✦",
+    "active": "🌐"
 }
-DEFAULT_SSH_CONFIG_PATH = os.path.expanduser("~/.ssh/config")
-DEFAULT_SETTINGS_PATH = os.path.expanduser("~/.ssh/xbar-ssh-settings")
+DEFAULT_TERMINAL = "Terminal"
+
+# Global settings
+FONT = DEFAULT_FONT
+COLORS = DEFAULT_COLORS
+ICONS = DEFAULT_ICONS
+TERMINAL = DEFAULT_TERMINAL
 IGNORED_HOSTS = []
+
+def ensure_directory_exists(path):
+    """Ensure the directory for the given path exists."""
+    directory = os.path.dirname(path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 def load_settings(settings_path):
     """Load settings from the specified settings file."""
-    global IGNORED_HOSTS
+    global FONT, COLORS, ICONS, TERMINAL, IGNORED_HOSTS
+    ensure_directory_exists(settings_path)
     config = configparser.ConfigParser()
     if os.path.exists(settings_path):
         config.read(settings_path)
+        FONT = config.get("Appearance", "font", fallback=DEFAULT_FONT)
+        COLORS["red"] = config.get("Colors", "red", fallback=DEFAULT_COLORS["red"])
+        COLORS["green"] = config.get("Colors", "green", fallback=DEFAULT_COLORS["green"])
+        TERMINAL = config.get("General", "terminal", fallback=DEFAULT_TERMINAL)
         IGNORED_HOSTS = config.get("Settings", "ignored_hosts", fallback="").split()
     else:
         logging.warning(f"Settings file not found: {settings_path}")
@@ -67,6 +81,16 @@ def check_ssh(ip):
         with socket.create_connection((ip, 22), timeout=1):
             return True
     except (socket.timeout, ConnectionRefusedError, OSError):
+        return False
+
+def check_active_ssh(host):
+    """Check if there are any active SSH connections to the host."""
+    try:
+        result = subprocess.run(['ps', 'aux'], stdout=subprocess.PIPE)
+        processes = result.stdout.decode('utf-8')
+        return f"ssh {host}" in processes
+    except Exception as e:
+        logging.error(f"Error checking active SSH connections: {e}")
         return False
 
 def parse_ssh_config(ssh_config_path):
@@ -84,6 +108,8 @@ def parse_ssh_config(ssh_config_path):
         line = line.strip()
         if line.startswith("Host "):
             host = line.split()[1]
+            if "*" in host or "?" in host:
+                continue
             if host not in IGNORED_HOSTS:
                 hosts[host] = {"ip": "", "comment": ""}
         elif host and host not in IGNORED_HOSTS:
@@ -102,7 +128,7 @@ def display_results(hosts):
     def process_host(host, ip):
         nonlocal any_success
         if ip and check_ssh(ip):
-            status_icon = ICONS["green"]
+            status_icon = ICONS["active"] if check_active_ssh(host) else ICONS["green"]
             color = COLORS["green"]
             any_success = True
         else:
@@ -110,7 +136,7 @@ def display_results(hosts):
             color = COLORS["red"]
 
         user_text = f"{host} - {ip}" if ip else host
-        actions = f"color={color} bash=\"/usr/bin/open\" param1=\"-a\" param2=\"iterm\" param3=\"ssh://{host}\""
+        actions = f"color={color} bash=\"/usr/bin/open\" param1=\"-a\" param2=\"{TERMINAL}\" param3=\"ssh://{host}\""
         return f"{status_icon} {user_text} | {FONT} {actions}"
 
     with ThreadPoolExecutor() as executor:
@@ -134,12 +160,49 @@ def handle_exceptions():
         logging.error(f"An error occurred: {e}")
         exit(1)
 
+def create_script_config(output_file):
+    """Create a sample script configuration file."""
+    sample_config = """
+# Script defaults to read this from ~/.config/xbar/ssh-config
+[Appearance]
+font = size=18 font=UbuntuMono
+
+[Colors]
+red = Crimson
+green = ForestGreen
+
+[General]
+# Options: Terminal, iterm
+terminal = Terminal
+
+[Settings]
+ignored_hosts = host_to_ignore1 host_to_ignore2
+"""
+    if output_file == "-":
+        print(sample_config)
+    else:
+        if os.path.exists(output_file):
+            raise FileExistsError(f"Config file already exists: {output_file}")
+        ensure_directory_exists(output_file)
+        with open(output_file, 'w') as f:
+            f.write(sample_config)
+        print(f"Sample config file created at: {output_file}")
+
 def main():
     """Main function to handle command-line arguments and execute the script."""
     parser = argparse.ArgumentParser(description="SSH utility for quickly accessing configured hosts from ~/.ssh/config")
     parser.add_argument('-i', '--input', type=str, help='Path to SSH config file', default=DEFAULT_SSH_CONFIG_PATH)
     parser.add_argument('-s', '--settings', type=str, help='Path to settings file', default=DEFAULT_SETTINGS_PATH)
+    parser.add_argument('--create-script-config', type=str, nargs='?', const=DEFAULT_SETTINGS_PATH,
+                        help='Create a sample configuration file. Use "-" to print to screen.')
     args = parser.parse_args()
+
+    if args.create_script_config is not None:
+        try:
+            create_script_config(args.create_script_config)
+        except FileExistsError as e:
+            print(e)
+        exit(0)
 
     ssh_config_path = args.input
     settings_path = args.settings

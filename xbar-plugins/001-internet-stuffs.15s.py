@@ -8,9 +8,6 @@ Last Modified: 2024-06-27
 Description: This xbar script checks various network conditions and displays the status in the top bar.
 """
 
-# Font for reuse
-FONT="size=18 font=UbuntuMono"
-
 import subprocess
 import socket
 import logging
@@ -143,17 +140,17 @@ def output_status(results, status):
         if test in ["ping_1", "ping_gateway", "http"]:
             success = results[test]
             name = data["name"]
-            output = f"{name}: {'Success' if success else 'Failure'} | {FONT} color={STATUS_INDICATORS['all_good' if success else 'all_bad']['color']}"
+            output = f"{name}: {'Success' if success else 'Failure'} | color={STATUS_INDICATORS['all_good' if success else 'all_bad']['color']}"
         elif test == "dns_servers":
             for idx, dns_success in enumerate(results[test]):
                 name = data["name"]
                 server = get_dns_servers()[idx]
-                output = f"{name} ({server}): {'Success' if dns_success else 'Failure'} | {FONT} color={STATUS_INDICATORS['all_good' if dns_success else 'all_bad']['color']}"
+                output = f"{name} ({server}): {'Success' if dns_success else 'Failure'} | color={STATUS_INDICATORS['all_good' if dns_success else 'all_bad']['color']}"
                 print(output)
             continue
         elif test == "public_ip":
             ip, owner = results["public_ip"]
-            output = f"Public IP: {ip} - Owner: {owner} | {FONT} color={STATUS_INDICATORS['all_good']['color']}"
+            output = f"Public IP: {ip} - Owner: {owner} | color={STATUS_INDICATORS['all_good']['color']}"
         print(output)
 
 def main():
