@@ -7,3 +7,4 @@ staging/3-pushTarFilesToUsefulServer.sh
 /.vscode
 /check_network_services
 /xbar-plugins inactive
+xbar-plugins/001-images.sh
