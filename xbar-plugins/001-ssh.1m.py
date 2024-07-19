@@ -31,7 +31,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Default constants
 DEFAULT_SSH_CONFIG_PATH = os.path.expanduser("~/.ssh/config")
 DEFAULT_SETTINGS_PATH = os.path.expanduser("~/.config/xbar/ssh-config")
-DEFAULT_FONT = "size=18 font=SFMono"
+DEFAULT_FONT = "size='24' font='Courier New'"
 DEFAULT_COLORS = {
     "red": "Crimson",
     "green": "ForestGreen"
@@ -165,7 +165,8 @@ def create_script_config(output_file):
     sample_config = """
 # Script defaults to read this from ~/.config/xbar/ssh-config
 [Appearance]
-font = size=18 font=UbuntuMono
+# Example change font size and use this font: https://fonts.google.com/specimen/Kode+Mono
+font = size=18 font='Kode Mono'
 
 [Colors]
 red = Crimson
