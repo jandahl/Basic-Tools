@@ -8,3 +8,4 @@ staging/3-pushTarFilesToUsefulServer.sh
 /check_network_services
 /xbar-plugins inactive
 xbar-plugins/001-images.sh
+xbar-plugins/001-ssh.1m.sh
