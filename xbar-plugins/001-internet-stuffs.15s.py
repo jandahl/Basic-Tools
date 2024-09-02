@@ -12,33 +12,60 @@ import subprocess
 import socket
 import logging
 import urllib.request
-import re
+import json
+import atexit
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Default constants
-DEFAULT_PING_TIMEOUT = 1
-DEFAULT_PING_ADDRESS = "1.1.1.1"
-DNS_QUERY_DOMAIN = "example.com"
-HTTP_TEST_URL = "http://example.com"
 RIPE_WHOIS_SERVER = "whois.ripe.net"
+CACHE_FILE = "whois_cache.json"
+cache = {}
 
-# Status indicators with icons and colors
-STATUS_INDICATORS = {
-    "all_good": {"icon": "👌", "color": "ForestGreen"},
-    "mostly_bad": {"icon": "⚠︎", "color": "DarkOrange"},
-    "all_bad": {"icon": "💩", "color": "Crimson"},
-}
+# Load cache from file
+def load_cache():
+    global cache
+    try:
+        with open(CACHE_FILE, 'r') as f:
+            cache = json.load(f)
+    except FileNotFoundError:
+        cache = {}
 
-# Test functions and their names
-TESTS = {
-    "ping_1": {"name": "Ping 1.1.1.1", "address": DEFAULT_PING_ADDRESS, "type": "ping"},
-    "ping_gateway": {"name": "Ping Default Gateway", "type": "ping_gateway"},
-    "dns_servers": {"name": "DNS Query", "type": "dns"},
-    "http": {"name": "HTTP Request", "url": HTTP_TEST_URL, "type": "http"},
-    "public_ip": {"name": "Public IP", "type": "public_ip"}
-}
+# Save cache to file
+def save_cache():
+    with open(CACHE_FILE, 'w') as f:
+        json.dump(cache, f)
+
+# Register save_cache to be called on program exit
+atexit.register(save_cache)
+
+# Load the cache at the start
+load_cache()
+
+def query_ripe_whois(ip):
+    if ip in cache:
+        return cache[ip]
+    
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((RIPE_WHOIS_SERVER, 43))
+            s.sendall(f"-B {ip}\n".encode())
+            response = b""
+            while True:
+                data = s.recv(1024)
+                if not data:
+                    break
+                response += data
+            for line in response.decode('utf-8', errors='ignore').splitlines():
+                if line.startswith("descr:"):
+                    result = line.split(":", 1)[1].strip()
+                    cache[ip] = result
+                    return result
+    except Exception as e:
+        logging.error(f"RIPE WHOIS query failed: {e}")
+    
+    cache[ip] = "Unknown"
+    return "Unknown"
+
+def check_network_conditions():
+    pass
 
 def run_command(command):
     return subprocess.run(command, capture_output=True, text=True, check=True).stdout.strip()
@@ -95,35 +122,6 @@ def get_public_ip_info():
     except Exception as e:
         logging.error(f"Failed to get public IP info: {e}")
     return "Unknown", "Unknown"
-
-def query_ripe_whois(ip):
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((RIPE_WHOIS_SERVER, 43))
-            s.sendall(f"-B {ip}\n".encode())
-            response = b""
-            while True:
-                data = s.recv(1024)
-                if not data:
-                    break
-                response += data
-            for line in response.decode('utf-8', errors='ignore').splitlines():
-                if line.startswith(("descr:", "owner:", "inetnum:")):
-                    return line.split(":", 1)[1].strip()
-    except Exception as e:
-        logging.error(f"RIPE WHOIS query failed: {e}")
-    return "Unknown"
-
-def check_network_conditions():
-    gateway = get_default_gateway()
-    return {
-        "ping_1": perform_ping(DEFAULT_PING_ADDRESS, DEFAULT_PING_TIMEOUT),
-        "ping_gateway": perform_ping(gateway, DEFAULT_PING_TIMEOUT) if gateway else False,
-        "dns_servers": [query_dns(server, DNS_QUERY_DOMAIN) for server in get_dns_servers()],
-        "http": test_http(HTTP_TEST_URL),
-        "public_ip": get_public_ip_info(),
-        "gateway_ip": gateway
-    }
 
 def determine_status(results):
     if not all([results["ping_1"], results["ping_gateway"], all(results["dns_servers"]), results["http"]]):
