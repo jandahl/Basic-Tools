@@ -11,3 +11,4 @@ xbar-plugins/001-images.sh
 xbar-plugins/001-ssh.1m.sh
 staging/popeconf.py
 /staging
+xbar-plugins/whois_cache.json
