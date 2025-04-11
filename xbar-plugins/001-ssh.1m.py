@@ -24,6 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 import configparser
 import subprocess
 import unittest
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -37,8 +38,8 @@ DEFAULT_COLORS = {
     "green": "ForestGreen"
 }
 DEFAULT_ICONS = {
-    "red": "✧",
-    "green": "✦",
+    "red": "✷",
+    "green": "✶",
     "active": "🌐"
 }
 DEFAULT_TERMINAL = "Terminal"
@@ -108,10 +109,12 @@ def parse_ssh_config(ssh_config_path):
         line = line.strip()
         if line.startswith("Host "):
             host = line.split()[1]
+            # Skip if the host contains wildcards
             if "*" in host or "?" in host:
+                logging.info(f"Skipping host with wildcard: {host}")
                 continue
             if host not in IGNORED_HOSTS:
-                hosts[host] = {"ip": "", "comment": ""}
+                hosts[host] = {"ip": "", "comment": "", "wildcard": False}
         elif host and host not in IGNORED_HOSTS:
             if line.startswith("HostName "):
                 hosts[host]["ip"] = line.split()[1]
@@ -125,9 +128,12 @@ def display_results(hosts):
     output_lines = []
     any_success = False
 
-    def process_host(host, ip):
+    def process_host(host, ip, wildcard):
         nonlocal any_success
-        if ip and check_ssh(ip):
+        if wildcard:
+            status_icon = ICONS["red"]  # Use red to indicate that this is a wildcard entry, which cannot be checked
+            color = COLORS["red"]
+        elif ip and check_ssh(ip):
             status_icon = ICONS["active"] if check_active_ssh(host) else ICONS["green"]
             color = COLORS["green"]
             any_success = True
@@ -140,7 +146,7 @@ def display_results(hosts):
         return f"{status_icon} {user_text} | {FONT} {actions}"
 
     with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(process_host, host, data["ip"]) for host, data in hosts.items()]
+        futures = [executor.submit(process_host, host, data["ip"], data["wildcard"]) for host, data in hosts.items()]
         for future in futures:
             try:
                 output_lines.append(future.result())
@@ -232,7 +238,7 @@ class TestSSHUtility(unittest.TestCase):
 
     def test_display_results(self):
         hosts = {
-            "test_host": {"ip": "192.0.2.0", "comment": ""}
+            "test_host": {"ip": "192.0.2.0", "comment": "", "wildcard": False}
         }
         results = display_results(hosts)
         self.assertIn("🚫ssh", results)
