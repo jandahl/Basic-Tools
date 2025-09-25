@@ -14,9 +14,11 @@ import logging
 import urllib.request
 import json
 import atexit
+import os
+import tempfile
 
 RIPE_WHOIS_SERVER = "whois.ripe.net"
-CACHE_FILE = "whois_cache.json"
+CACHE_FILE = os.path.join(tempfile.gettempdir(), "xbar_whois_cache.json")
 cache = {}
 
 # Load cache from file
@@ -27,11 +29,17 @@ def load_cache():
             cache = json.load(f)
     except FileNotFoundError:
         cache = {}
+    except (IOError, json.JSONDecodeError) as e:
+        logging.error(f"Error loading cache from {CACHE_FILE}: {e}")
+        cache = {}
 
 # Save cache to file
 def save_cache():
-    with open(CACHE_FILE, 'w') as f:
-        json.dump(cache, f)
+    try:
+        with open(CACHE_FILE, 'w') as f:
+            json.dump(cache, f)
+    except IOError as e:
+        logging.error(f"Error saving cache to {CACHE_FILE}: {e}")
 
 # Register save_cache to be called on program exit
 atexit.register(save_cache)
